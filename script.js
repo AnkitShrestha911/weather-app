@@ -13,6 +13,7 @@ const guidContainer = document.querySelector('.guide_container');
 
 let isSelected = false;
 let cities = [];
+
 const api_id = "706be48014809fa8556c0a920f2d6c14";
 
 
@@ -21,7 +22,6 @@ function checkPermission() {
         name: 'geolocation'
     }).then(permissions => permissions.state === 'granted' ? (locationContainer.classList.remove('active'), guidContainer.classList.remove('active'), getUserLocation()) : checkDeniedPermission());
 
-    // (locationContainer.classList.add('active'), weatherContainer.classList.remove('active'))
 }
 
 function checkDeniedPermission() {
@@ -31,11 +31,11 @@ function checkDeniedPermission() {
 }
 
 
-//Set session storage 
+//Set local storage 
 
-async function setSessionStorage(newPosition) {
+async function setLocalStorage(newPosition) {
     isSelected = true;
-    sessionStorage.setItem('manual-coordinates', JSON.stringify(newPosition));
+    localStorage.setItem('manual-coordinates', JSON.stringify(newPosition));
 }
 
 //Search input element
@@ -53,7 +53,7 @@ function selectInput(list) {
         state: list.dataset.state
     }
     ul.classList.remove('active');
-    setSessionStorage(manualPosition);
+    setLocalStorage(manualPosition);
 }
 
 //Fetch location by gps
@@ -84,8 +84,8 @@ function showPostion(position) {
 async function getUserWeatherInfo(userPosition) {
     const { lat, lon, city, state } = userPosition;
     loader.classList.add('active');
+    errorContainer.classList.remove('active');
     try {
-        errorContainer.classList.remove('active');
 
         const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${api_id}&units=metric`);
         const data = await response.json();
@@ -94,7 +94,7 @@ async function getUserWeatherInfo(userPosition) {
     }
     catch (err) {
         loader.classList.remove('active');
-        errorContainer.classList.add('active');
+        weatherContainer.classList.remove('active');
         console.log(err)
     }
 
@@ -120,8 +120,8 @@ async function getAllCities() {
 }
 
 
-async function getFromSessionStorage() {
-    let localCoordinates = await sessionStorage.getItem('manual-coordinates');
+async function getFromLocalStorage() {
+    let localCoordinates = await localStorage.getItem('manual-coordinates');
     const manualcoordinates = await JSON.parse(localCoordinates);
     isSelected = false;
     if (localCoordinates) {
@@ -279,7 +279,10 @@ function renderInfo(data, city, state) {
 }
 
 
-firstTab.addEventListener('click', () => {
+
+//Tab 1
+
+function getFirstTab() {
     secondTab.classList.remove('active');
     firstTab.classList.add('active');
     searchContainer.classList.remove('active');
@@ -287,10 +290,12 @@ firstTab.addEventListener('click', () => {
     weatherContainer.classList.remove('active');
     errorContainer.classList.remove('active');
     checkPermission();
-    // checkDeniedPermission();
-})
+    
+}
 
-secondTab.addEventListener('click', () => {
+//Tab 2
+
+function getSecondTab() {
     firstTab.classList.remove('active');
     secondTab.classList.add('active');
     loader.classList.remove('active');
@@ -300,15 +305,24 @@ secondTab.addEventListener('click', () => {
     weatherContainer.classList.remove('active');
     guidContainer.classList.remove('active');
     searchInput.focus();
-    if (sessionStorage.getItem('manual-coordinates') !== null) {
-        getFromSessionStorage();
+    if (localStorage.getItem('manual-coordinates') !== null) {
+        getFromLocalStorage();
     }
+}
+
+
+firstTab.addEventListener('click', () => {
+    getFirstTab();
+})
+
+secondTab.addEventListener('click', () => {
+    getSecondTab();
 })
 
 searchIcon.addEventListener('click', () => {
 
     let currentValue = searchInput.value.trim().toLowerCase();
-    let localCoordinates = sessionStorage.getItem('manual-coordinates');
+    let localCoordinates = localStorage.getItem('manual-coordinates');
     const manualcoordinates = JSON.parse(localCoordinates);
     searchInput.value = '';
 
@@ -320,14 +334,14 @@ searchIcon.addEventListener('click', () => {
         if (ele.textContent !== 'Not found' && currentValue === ele.dataset.city.trim().toLowerCase() && !isSelected) {
             ul.classList.remove('active');
             selectInput(ele);
-            getFromSessionStorage();
+            getFromLocalStorage();
             return;
         }
 
         if (currentValue === manualcoordinates['city'].toLowerCase()) {
 
             ul.classList.remove('active');
-            getFromSessionStorage();
+            getFromLocalStorage();
             return;
         }
 
@@ -340,8 +354,8 @@ searchIcon.addEventListener('click', () => {
 });
 
 grantLocationBtn.addEventListener('click', () => {
-    getUserLocation();
     checkPermission();
+    getUserLocation();
 });
 
 searchInput.addEventListener('keyup', (e) => {
@@ -352,7 +366,7 @@ searchInput.addEventListener('keyup', (e) => {
 
 window.addEventListener('load', () => {
     firstTab.classList.add('active');
-    checkPermission();
+    getFirstTab();
     getAllCities();
 })
 
