@@ -34,14 +34,13 @@ function checkDeniedPermission() {
 //Set local storage 
 
 async function setLocalStorage(newPosition) {
-    isSelected = true;
     localStorage.setItem('manual-coordinates', JSON.stringify(newPosition));
 }
 
 //Search input element
 
 function selectInput(list) {
-
+    isSelected = true;
     if (isSelected) {
         searchInput.value = list.dataset.city;
     }
@@ -290,7 +289,7 @@ function getFirstTab() {
     weatherContainer.classList.remove('active');
     errorContainer.classList.remove('active');
     checkPermission();
-    
+
 }
 
 //Tab 2
