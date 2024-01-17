@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Weather App</title>
+</head>
+
+<body>
+    <div class="wrapper">
+        <h1 id="heading">WEATHER APP</h1>
+        <div class="tabs-container">
+            <div class="tabs first_tab ">Your Weather</div>
+            <div class="tabs second_tab ">Search Weather</div>
+        </div>
+
+
+
+
+        <!-- Search weather input  -->
+
+        <div class="searchweather_screen">
+            <input type="text" placeholder="Search a city..." data-search_city>
+            <div class="search_icon">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+
+            <div id="show_item">
+                <ul>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Loader -->
+        <div class="loader">
+            <img src="./assets/loading.gif" alt="" width="200px" height="200px">
+            <h2>Loading...</h2>
+        </div>
+
+        <!-- Error -->
+
+        <div class="error_container">
+            <img src="./assets/not-found.png" alt="404-not-found" width="200px" height="200px">
+            <h2>City Not Found !</h2>
+        </div>
+
+        <!-- When user block gps guide-->
+        <div class="guide_container ">
+            <div class="step">
+                <h2>Step 1 : Press the icon shown in below image. </h2>
+                <img src="./assets/step1.png" alt="">
+            </div>
+
+            <div class="step">
+                <h2>Step 2 : Press the reset permission button shown in below image and reload page. </h2>
+                <img src="./assets/step2.png" alt="">
+            </div>
+        </div>
+
+        <!-- Main weather display -->
+
+        <div class="weather_container">
+
+            <!-- Grant location access container -->
+
+            <div class="location_container  ">
+                <img src="./assets/location.png" alt="location" width="100px" height="100px">
+                <h2>Grant Location Access</h2>
+                <p>Allow Access To Get Weather Information</p>
+                <button class="grant_btn">Grant Access</button>
+            </div>
+
+            <!-- Weather info -->
+
+            <div class="weather_detail_container active">
+                <div class="city_flag">
+                    <h1 data_cityname>
+                        <h4 data-statename></h4>
+                    </h1>
+                    <img alt="flag" data_flag width="50px" height="30px">
+                </div>
+
+                <h2 data-weather_status></h2>
+
+                <img alt="weather status" width="120px" height="120px" data-weather_img>
+
+                <h2 data-weather_temp></h2>
+
+                <div class="info_boxes">
+                    <div class="box">
+                        <img src="./assets/wind.png" alt="" width="100px" height="100px">
+                        <h2>WINDSPEED</h2>
+                        <p id="wind_data"></p>
+                    </div>
+
+                    <div class="box box2">
+                        <img src="./assets/humidity.png" alt="" width="60px" height="60px">
+                        <h2 id="humidity_heading">HUMIDITY</h2>
+                        <p id="humidity_data"></p>
+                    </div>
+
+                    <div class="box">
+                        <img src="./assets/cloud.png" alt="" width="100px" height="100px">
+                        <h2>CLOUDS</h2>
+                        <p id="cloud_data"></p>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+
+
+    <script src="https://kit.fontawesome.com/608577c7e4.js" crossorigin="anonymous"></script>
+    <script src="./script.js"></script>
+</body>
+
+</html>
