@@ -190,7 +190,7 @@ function setWeatherSource(weatherImg, data) {
     if (icon.includes('n') && description === 'thunderstorm') {
         weatherImg.src = `./icons/night-thunderstorm.png`;
     }
-    else if (icon.includes('n' && description === 'few clouds')) {
+    else if (icon.includes('n') && description === 'few clouds') {
         weatherImg.src = `./icons/moon-cloud.png`;
 
     }
