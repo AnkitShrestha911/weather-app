@@ -10,9 +10,9 @@ const searchInput = document.querySelector('[data-search_city]');
 const searchIcon = document.querySelector('.search_icon');
 const errorContainer = document.querySelector('.error_container');
 const guidContainer = document.querySelector('.guide_container');
-
+let manualPosition = {};
 let isSelected = false;
-let cities = [];
+let geographicalData = [];
 
 const api_id = "706be48014809fa8556c0a920f2d6c14";
 
@@ -22,12 +22,14 @@ function checkPermission() {
         name: 'geolocation'
     }).then(permissions => permissions.state === 'granted' ? (locationContainer.classList.remove('active'), guidContainer.classList.remove('active'), getUserLocation()) : checkDeniedPermission());
 
+
 }
 
 function checkDeniedPermission() {
     navigator.permissions.query({
         name: 'geolocation'
-    }).then(permissions => permissions.state === 'denied' ? (locationContainer.classList.remove('active'), guidContainer.classList.add('active')) : (locationContainer.classList.add('active'), weatherContainer.classList.remove('active')));
+    }).then(permissions => permissions.state === 'denied' ? (locationContainer.classList.remove('active'), guidContainer.classList.add('active')) : locationContainer.classList.add('active'));
+
 }
 
 
@@ -41,18 +43,21 @@ async function setLocalStorage(newPosition) {
 
 function selectInput(list) {
     isSelected = true;
-    if (isSelected) {
-        searchInput.value = list.dataset.city;
+    if (isSelected && ul.classList.contains('active')) {
+        searchInput.value = list.dataset.city === undefined ? list.dataset.fullstate : list.dataset.city;
     }
 
-    let manualPosition = {
+    manualPosition = {
         lat: list.dataset.lat,
         lon: list.dataset.lon,
         city: list.dataset.city,
-        state: list.dataset.state
+        state: list.dataset.state,
+        fullstate: list.dataset.fullstate,
+        country: list.dataset.country
     }
+
+    searchInput.focus();
     ul.classList.remove('active');
-    setLocalStorage(manualPosition);
 }
 
 //Fetch location by gps
@@ -81,7 +86,7 @@ function showPostion(position) {
 
 // Handle User weather
 async function getUserWeatherInfo(userPosition) {
-    const { lat, lon, city, state } = userPosition;
+    const { lat, lon, city, state, fullstate, country } = userPosition;
     loader.classList.add('active');
     errorContainer.classList.remove('active');
     try {
@@ -89,7 +94,7 @@ async function getUserWeatherInfo(userPosition) {
         const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${api_id}&units=metric`);
         const data = await response.json();
 
-        renderInfo(data, city, state);
+        renderInfo(data, city, state, fullstate, country);
     }
     catch (err) {
         loader.classList.remove('active');
@@ -108,7 +113,7 @@ async function getAllCities() {
         const data = await response.json();
         const key = data['RECORDS'];
 
-        cities = await key.filter((ele) => {
+        geographicalData = await key.map((ele) => {
             return ele;
         })
     }
@@ -139,29 +144,51 @@ async function renderCity() {
     if (searchInput.value !== '') {
         ul.classList.add('active');
         let currentInput = searchInput.value.trim().toLowerCase();
-        let tempArr = await cities.filter((ele) => {
-            return (ele['owm_city_name'].toLowerCase().startsWith(currentInput) || ele['country_long'].toLowerCase().startsWith(currentInput) || ele['admin_level_1_long'].toLowerCase().startsWith(currentInput));
+
+        let cities = await geographicalData.filter((ele) => {
+            return ele['owm_city_name'].toLowerCase().startsWith(currentInput);
         });
+
+
+        let states = await geographicalData.filter((ele) => {
+            return ele['admin_level_1_long'].toLowerCase().startsWith(currentInput);
+        })
+
+        let tempArr = cities.concat(states[0]);
 
         for (let i = 0; i < 10; i++) {
 
             if (i < tempArr.length) {
-                let lat = tempArr[i]['owm_latitude'];
-                let lon = tempArr[i]['owm_longitude'];
-                let city = tempArr[i]['owm_city_name'];
-                let fullState = tempArr[i]['admin_level_1_long'];
-                let shortState = tempArr[i]['admin_level_1_short'];
-                let country = tempArr[i]['owm_country'];
+                if (i < cities.length) {
+                    let lat = tempArr[i]['owm_latitude'];
+                    let lon = tempArr[i]['owm_longitude'];
+                    let city = tempArr[i]['owm_city_name'];
+                    let shortState = tempArr[i]['admin_level_1_short'];
+                    let fullState = tempArr[i]['admin_level_1_long'];
+                    let country = tempArr[i]['owm_country'];
 
-                let li = `<li onclick=selectInput(this) data-lat = ${lat} data-lon=${lon} data-city = "${city}" data-state= "${shortState}">${city}, ${fullState},${country} </li>`;
-                finalResult.push(li);
+                    let li = `<li onclick=selectInput(this) data-lat = ${lat} data-lon=${lon} data-city = "${city}" data-state= "${shortState}" data-fullstate="${fullState}" >${city},${fullState},${country} </li>`;
+                    finalResult.push(li);
+
+                }
+                if (i < states.length) {
+                    let lat = tempArr[i]['owm_latitude'];
+                    let lon = tempArr[i]['owm_longitude'];
+                    let fullState = tempArr[i]['admin_level_1_long'];
+                    let country = tempArr[i]['owm_country'];
+
+                    let li = `<li onclick=selectInput(this) data-lat = ${lat} data-lon=${lon}  data-fullstate="${fullState}" data-country = "${country}">${fullState},${country} </li>`;
+                    finalResult.push(li);
+
+                }
             }
         }
 
         if (finalResult.length > 0) {
             let tempAns = finalResult.filter((ele) => {
-                if (ele.innerHTML !== '')
+                if (ele.innerHTML !== '') {
                     return ele;
+                }
 
             })
 
@@ -238,7 +265,7 @@ function setWeatherSource(weatherImg, data) {
 
 //Display the weather info
 
-function renderInfo(data, city, state) {
+function renderInfo(data, city, state, fullstate, country) {
     const cityName = document.querySelector('[data_cityname]');
     const stateName = document.querySelector('[data-statename]');
     const countryImg = document.querySelector('[data_flag]');
@@ -253,8 +280,8 @@ function renderInfo(data, city, state) {
 
     return new Promise((resolve, reject) => {
         try {
-            cityName.textContent = firstTab.classList.contains('active') ? data['name'] : city;
-            stateName.textContent = firstTab.classList.contains('active') ? data.sys['country'] : state;
+            cityName.textContent = firstTab.classList.contains('active') ? data['name'] : (city === (undefined || '') ? fullstate : city);
+            stateName.textContent = firstTab.classList.contains('active') ? data.sys['country'] : (state === undefined ? country : state);
 
             countryImg.src = `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`
             weatherStatus.innerText = data.weather[0].main;
@@ -277,6 +304,61 @@ function renderInfo(data, city, state) {
 
 }
 
+// Handle manual searching 
+
+function getManualSearching() {
+    let currentValue = searchInput.value.trim().toLowerCase();
+    searchInput.value = '';
+    searchInput.blur();
+
+
+    manualPosition['city'] = manualPosition['city'] === undefined ? '' : manualPosition['city'].toLowerCase();
+    manualPosition['fullstate'] = manualPosition['fullstate'] === undefined ? '' : manualPosition['fullstate'].toLowerCase();
+
+    if (currentValue !== '') {
+        loader.classList.add('active');
+        errorContainer.classList.remove('active');
+
+        if (ul.classList.contains('active')) {
+            isSelected = false;
+        }
+
+        for (let i = 0; i < ul.childNodes.length; i++) {
+            let ele = ul.childNodes[i];
+            ele.dataset.city = ele.dataset.city === undefined ? '' : ele.dataset.city;
+            ele.dataset.fullstate = ele.dataset.fullstate === undefined ? '' : ele.dataset.fullstate;
+
+            if (ele.textContent !== 'Not found' && (currentValue === ele.dataset.city.trim().toLowerCase() || currentValue === ele.dataset.fullstate.trim().toLowerCase()) && !isSelected) {
+                ul.classList.remove('active');
+                selectInput(ele);
+                searchInput.blur();
+                setLocalStorage(manualPosition);
+                getFromLocalStorage();
+                break;
+
+            }
+
+
+        }
+
+
+        if (currentValue === manualPosition['city'] || currentValue === manualPosition['fullstate']) {
+            ul.classList.remove('active');
+            setLocalStorage(manualPosition);
+            getFromLocalStorage();
+
+        }
+        else {
+
+            ul.classList.remove('active');
+            errorContainer.classList.add('active');
+            weatherContainer.classList.remove('active');
+            loader.classList.remove('active');
+
+        }
+    }
+}
+
 
 
 //Tab 1
@@ -288,6 +370,7 @@ function getFirstTab() {
     loader.classList.remove('active');
     weatherContainer.classList.remove('active');
     errorContainer.classList.remove('active');
+    locationContainer.classList.add('active');
     checkPermission();
 
 }
@@ -319,38 +402,9 @@ secondTab.addEventListener('click', () => {
 })
 
 searchIcon.addEventListener('click', () => {
-
-    let currentValue = searchInput.value.trim().toLowerCase();
-    let localCoordinates = localStorage.getItem('manual-coordinates');
-    const manualcoordinates = JSON.parse(localCoordinates);
-    searchInput.value = '';
-
-    if (currentValue !== '') {
-        loader.classList.add('active');
-        errorContainer.classList.remove('active');
-        let ele = ul.childNodes[0];
-
-        if (ele.textContent !== 'Not found' && currentValue === ele.dataset.city.trim().toLowerCase() && !isSelected) {
-            ul.classList.remove('active');
-            selectInput(ele);
-            getFromLocalStorage();
-            return;
-        }
-
-        if (currentValue === manualcoordinates['city'].toLowerCase()) {
-
-            ul.classList.remove('active');
-            getFromLocalStorage();
-            return;
-        }
-
-        ul.classList.remove('active');
-        errorContainer.classList.add('active');
-        weatherContainer.classList.remove('active');
-        loader.classList.remove('active');
-    }
-
+    getManualSearching();
 });
+
 
 grantLocationBtn.addEventListener('click', () => {
     checkPermission();
@@ -361,6 +415,11 @@ searchInput.addEventListener('keyup', (e) => {
     setTimeout(() => {
         renderCity();
     }, 500);
+
+
+    if (e.key === 'Enter') {
+        getManualSearching();
+    }
 })
 
 window.addEventListener('load', () => {
