@@ -323,11 +323,13 @@ async function renderInfo(data, city, state, fullstate, country) {
         cityName.textContent = firstTab.classList.contains('active') ? data['name'] : ((city === undefined || city === '') && (fullstate === undefined || fullstate === '')) ? data['name'] : (city === undefined || city === '') ? fullstate : city;
         stateName.textContent = firstTab.classList.contains('active') ? data.sys['country'] : (state === undefined ? country : state);
 
+        let img = new Image();
+
         if (data.sys['country']) {
             countryImg.style.width = "50px";
             countryImg.style.height = "30px"
-            let source = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
-            countryImg.src = source;
+            img.src = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
+          
 
         }
         else {
@@ -343,10 +345,14 @@ async function renderInfo(data, city, state, fullstate, country) {
         windData.innerText = `${data.wind.speed}m/s`;
         humidityData.innerText = `${data.main.humidity}%`;
         cloudData.innerText = `${data.clouds.all}%`
+        
 
+        img.onload = function () {
+            countryImg.src = img.src;
+            loader.classList.remove('active');
+            weatherContainer.classList.add('active');
+        }
 
-        loader.classList.remove('active');
-        weatherContainer.classList.add('active');
     }
 
 
