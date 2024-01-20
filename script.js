@@ -335,7 +335,7 @@ async function renderInfo(data, city, state, fullstate, country) {
         else {
             countryImg.src = "";
             countryImg.alt = "No flag"
-            countryImg.style.width = "200px"
+            countryImg.style.height = "80px"
 
         }
 
