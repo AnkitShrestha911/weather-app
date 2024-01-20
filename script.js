@@ -10,8 +10,8 @@ const searchInput = document.querySelector('[data-search_city]');
 const searchIcon = document.querySelector('.search_icon');
 const errorContainer = document.querySelector('.error_container');
 const guidContainer = document.querySelector('.guide_container');
+
 let manualPosition = {};
-let isSelected = false;
 let geographicalData = [];
 
 const api_id = "706be48014809fa8556c0a920f2d6c14";
@@ -35,29 +35,29 @@ function checkDeniedPermission() {
 
 //Set local storage 
 
-async function setLocalStorage(newPosition) {
+function setLocalStorage(newPosition) {
     localStorage.setItem('manual-coordinates', JSON.stringify(newPosition));
 }
 
 //Search input element
 
 function selectInput(list) {
-    isSelected = true;
-    if (isSelected && ul.classList.contains('active')) {
-        searchInput.value = list.dataset.city === undefined ? list.dataset.fullstate : list.dataset.city;
-    }
-
     manualPosition = {
         lat: list.dataset.lat,
         lon: list.dataset.lon,
         city: list.dataset.city,
         state: list.dataset.state,
         fullstate: list.dataset.fullstate,
-        country: list.dataset.country
-    }
+        country: list.dataset.country,
+        manualCityName: ''
+
+    };
 
     searchInput.focus();
     ul.classList.remove('active');
+    searchInput.value = "";
+    setLocalStorage(manualPosition);
+    getUserWeatherInfo(manualPosition);
 }
 
 //Fetch location by gps
@@ -89,19 +89,54 @@ async function getUserWeatherInfo(userPosition) {
     const { lat, lon, city, state, fullstate, country } = userPosition;
     loader.classList.add('active');
     errorContainer.classList.remove('active');
+    weatherContainer.classList.remove('active');
+
     try {
 
         const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${api_id}&units=metric`);
         const data = await response.json();
+        if (data['cod'] === '400') {
+            throw new Error('Wrong latitude or longitude')
+        }
+
 
         renderInfo(data, city, state, fullstate, country);
+
     }
     catch (err) {
         loader.classList.remove('active');
         weatherContainer.classList.remove('active');
-        console.log(err)
+
+
     }
 
+
+
+}
+
+async function getUserWeatherInfoByCityName(cityName) {
+    loader.classList.add('active');
+    errorContainer.classList.remove('active');
+    weatherContainer.classList.remove('active');
+    try {
+        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${api_id}&units=metric`)
+        const data = await response.json();
+
+        if (data['cod'] === '404' || data['name'].toLowerCase() !== cityName) {
+            throw new Error('City not found');
+        }
+
+        manualPosition['manualCityName'] = cityName;
+
+        setLocalStorage(manualPosition);
+        renderInfo(data);
+    }
+    catch (err) {
+        loader.classList.remove('active');
+        weatherContainer.classList.remove('active');
+        errorContainer.classList.add('active');
+
+    }
 }
 
 // Handle cities pop data
@@ -119,17 +154,21 @@ async function getAllCities() {
     }
 
     catch (err) {
-        console.log('getallcities error', err)
+        console.log(err)
     }
 }
 
 
 async function getFromLocalStorage() {
     let localCoordinates = await localStorage.getItem('manual-coordinates');
-    const manualcoordinates = await JSON.parse(localCoordinates);
-    isSelected = false;
+    const manualCoordinates = await JSON.parse(localCoordinates);
     if (localCoordinates) {
-        getUserWeatherInfo(manualcoordinates);
+        if (manualCoordinates['manualCityName'] !== '' && manualCoordinates['manualCityName'] !== undefined) {
+            getUserWeatherInfoByCityName(manualCoordinates['manualCityName']);
+        }
+        else {
+            getUserWeatherInfo(manualCoordinates);
+        }
     } else {
         weatherContainer.classList.remove('active');
     }
@@ -265,10 +304,10 @@ function setWeatherSource(weatherImg, data) {
 
 //Display the weather info
 
-function renderInfo(data, city, state, fullstate, country) {
+async function renderInfo(data, city, state, fullstate, country) {
     const cityName = document.querySelector('[data_cityname]');
     const stateName = document.querySelector('[data-statename]');
-    const countryImg = document.querySelector('[data_flag]');
+    let countryImg = document.querySelector('[data_flag]');
     const weatherStatus = document.querySelector('[data-weather_status]');
     const weatherImg = document.querySelector('[data-weather_img]');
 
@@ -278,28 +317,41 @@ function renderInfo(data, city, state, fullstate, country) {
     const humidityData = document.querySelector('#humidity_data');
     const cloudData = document.querySelector('#cloud_data');
 
-    return new Promise((resolve, reject) => {
-        try {
-            cityName.textContent = firstTab.classList.contains('active') ? data['name'] : (city === (undefined || '') ? fullstate : city);
-            stateName.textContent = firstTab.classList.contains('active') ? data.sys['country'] : (state === undefined ? country : state);
 
-            countryImg.src = `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`
-            weatherStatus.innerText = data.weather[0].main;
-            setWeatherSource(weatherImg, data);
-            temperature.innerText = `${data.main.temp} °C`;
-            windData.innerText = `${data.wind.speed}m/s`;
-            humidityData.innerText = `${data.main.humidity}%`;
-            cloudData.innerText = `${data.clouds.all}%`
+    try {
 
-            loader.classList.remove('active');
-            weatherContainer.classList.add('active');
-            resolve(200);
+        loader.classList.remove('active');
+        weatherContainer.classList.add('active');
+
+
+        cityName.textContent = firstTab.classList.contains('active') ? data['name'] : ((city === undefined || city === '') && (fullstate === undefined || fullstate === '')) ? data['name'] : (city === undefined || city === '') ? fullstate : city;
+        stateName.textContent = firstTab.classList.contains('active') ? data.sys['country'] : (state === undefined ? country : state);
+
+        if (data.sys['country']) {
+            countryImg.style.width = "50px";
+            countryImg.src = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`
+
         }
-        catch (err) {
-            loader.classList.remove('active');
-            reject(404);
+        else {
+            countryImg.src = "";
+            countryImg.alt = "No flag"
+            countryImg.style.width = "200px"
+
         }
-    })
+
+        weatherStatus.innerText = data.weather[0].main;
+        setWeatherSource(weatherImg, data);
+        temperature.innerText = `${data.main.temp} °C`;
+        windData.innerText = `${data.wind.speed}m/s`;
+        humidityData.innerText = `${data.main.humidity}%`;
+        cloudData.innerText = `${data.clouds.all}%`
+    }
+
+
+    catch (err) {
+        loader.classList.remove('active');
+        weatherContainer.classList.remove('active');
+    }
 
 
 }
@@ -310,30 +362,24 @@ function getManualSearching() {
     let currentValue = searchInput.value.trim().toLowerCase();
     searchInput.value = '';
     searchInput.blur();
-
-
-    manualPosition['city'] = manualPosition['city'] === undefined ? '' : manualPosition['city'].toLowerCase();
-    manualPosition['fullstate'] = manualPosition['fullstate'] === undefined ? '' : manualPosition['fullstate'].toLowerCase();
+    let isFound = false;
 
     if (currentValue !== '') {
         loader.classList.add('active');
         errorContainer.classList.remove('active');
 
-        if (ul.classList.contains('active')) {
-            isSelected = false;
-        }
 
         for (let i = 0; i < ul.childNodes.length; i++) {
             let ele = ul.childNodes[i];
             ele.dataset.city = ele.dataset.city === undefined ? '' : ele.dataset.city;
             ele.dataset.fullstate = ele.dataset.fullstate === undefined ? '' : ele.dataset.fullstate;
 
-            if (ele.textContent !== 'Not found' && (currentValue === ele.dataset.city.trim().toLowerCase() || currentValue === ele.dataset.fullstate.trim().toLowerCase()) && !isSelected) {
+            if (ele.textContent !== 'Not found' && (currentValue === ele.dataset.city.trim().toLowerCase() || currentValue === ele.dataset.fullstate.trim().toLowerCase())) {
                 ul.classList.remove('active');
                 selectInput(ele);
                 searchInput.blur();
-                setLocalStorage(manualPosition);
                 getFromLocalStorage();
+                isFound = true;
                 break;
 
             }
@@ -341,12 +387,9 @@ function getManualSearching() {
 
         }
 
-
-        if (currentValue === manualPosition['city'] || currentValue === manualPosition['fullstate']) {
+        if (ul.childNodes[0].textContent === 'Not found' || !isFound) {
             ul.classList.remove('active');
-            setLocalStorage(manualPosition);
-            getFromLocalStorage();
-
+            getUserWeatherInfoByCityName(currentValue);
         }
         else {
 
@@ -420,12 +463,10 @@ searchInput.addEventListener('keyup', (e) => {
     if (e.key === 'Enter') {
         getManualSearching();
     }
-})
+},false)
 
 window.addEventListener('load', () => {
     firstTab.classList.add('active');
     getFirstTab();
     getAllCities();
 })
-
-
