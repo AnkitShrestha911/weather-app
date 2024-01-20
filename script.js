@@ -329,7 +329,7 @@ async function renderInfo(data, city, state, fullstate, country) {
             countryImg.style.width = "50px";
             countryImg.style.height = "30px"
             img.src = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
-          
+
 
         }
         else {
@@ -345,13 +345,21 @@ async function renderInfo(data, city, state, fullstate, country) {
         windData.innerText = `${data.wind.speed}m/s`;
         humidityData.innerText = `${data.main.humidity}%`;
         cloudData.innerText = `${data.clouds.all}%`
-        
 
-        img.onload = function () {
+
+        if (countryImg.alt !== 'No flag') {
+            img.onload = function () {
+                countryImg.src = img.src;
+                loader.classList.remove('active');
+                weatherContainer.classList.add('active');
+            }
+        }
+        else {
             countryImg.src = img.src;
             loader.classList.remove('active');
             weatherContainer.classList.add('active');
         }
+
 
     }
 
