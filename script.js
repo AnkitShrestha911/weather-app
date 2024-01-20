@@ -329,6 +329,7 @@ async function renderInfo(data, city, state, fullstate, country) {
 
         if (data.sys['country']) {
             countryImg.style.width = "50px";
+            countryImg.style.height = "30px"
             countryImg.src = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`
 
         }
