@@ -329,31 +329,36 @@ async function renderInfo(data, city, state, fullstate, country) {
         humidityData.innerText = `${data.main.humidity}%`;
         cloudData.innerText = `${data.clouds.all}%`
 
+        let img = new Image();
 
-        countryImg.onload = function () {
+        img.onload = function () {
             loader.classList.remove('active');
             weatherContainer.classList.add('active');
         }
 
-        countryImg.onerror = function () {
+        img.onerror = function () {
             loader.classList.remove('active');
             weatherContainer.classList.add('active');
 
         }
+
 
         if (data.sys['country']) {
             countryImg.style.width = "50px";
             countryImg.style.height = "30px"
-            countryImg.src = `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
+            img.src = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
 
 
         }
         else {
-            countryImg.src = "";
+            img.src = "";
             countryImg.alt = "No flag"
             countryImg.style.height = "80px"
 
         }
+
+        countryImg.src = img.src;
+
 
 
 
