@@ -53,7 +53,7 @@ function selectInput(list) {
 
     };
 
-    searchInput.focus();
+    searchInput.blur();
     ul.classList.remove('active');
     searchInput.value = "";
     setLocalStorage(manualPosition);
