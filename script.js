@@ -307,7 +307,7 @@ function setWeatherSource(weatherImg, data) {
 async function renderInfo(data, city, state, fullstate, country) {
     const cityName = document.querySelector('[data_cityname]');
     const stateName = document.querySelector('[data-statename]');
-    let countryImg = document.querySelector('[data_flag]');
+    const countryImg = document.querySelector('[data_flag]');
     const weatherStatus = document.querySelector('[data-weather_status]');
     const weatherImg = document.querySelector('[data-weather_img]');
 
@@ -322,13 +322,29 @@ async function renderInfo(data, city, state, fullstate, country) {
 
         cityName.textContent = firstTab.classList.contains('active') ? data['name'] : ((city === undefined || city === '') && (fullstate === undefined || fullstate === '')) ? data['name'] : (city === undefined || city === '') ? fullstate : city;
         stateName.textContent = firstTab.classList.contains('active') ? data.sys['country'] : (state === undefined ? country : state);
+        weatherStatus.innerText = data.weather[0].main;
+        setWeatherSource(weatherImg, data);
+        temperature.innerText = `${data.main.temp} °C`;
+        windData.innerText = `${data.wind.speed}m/s`;
+        humidityData.innerText = `${data.main.humidity}%`;
+        cloudData.innerText = `${data.clouds.all}%`
 
-        let img = new Image();
+
+        countryImg.onload = function () {
+            loader.classList.remove('active');
+            weatherContainer.classList.add('active');
+        }
+
+        countryImg.onerror = function () {
+            loader.classList.remove('active');
+            weatherContainer.classList.add('active');
+
+        }
 
         if (data.sys['country']) {
             countryImg.style.width = "50px";
             countryImg.style.height = "30px"
-            img.src = await `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
+            countryImg.src = `https://flagcdn.com/144x108/${data.sys['country'].toLowerCase()}.png`;
 
 
         }
@@ -339,26 +355,6 @@ async function renderInfo(data, city, state, fullstate, country) {
 
         }
 
-        weatherStatus.innerText = data.weather[0].main;
-        setWeatherSource(weatherImg, data);
-        temperature.innerText = `${data.main.temp} °C`;
-        windData.innerText = `${data.wind.speed}m/s`;
-        humidityData.innerText = `${data.main.humidity}%`;
-        cloudData.innerText = `${data.clouds.all}%`
-
-
-        if (countryImg.alt !== 'No flag') {
-            img.onload = function () {
-                countryImg.src = img.src;
-                loader.classList.remove('active');
-                weatherContainer.classList.add('active');
-            }
-        }
-        else {
-            countryImg.src = img.src;
-            loader.classList.remove('active');
-            weatherContainer.classList.add('active');
-        }
 
 
     }
